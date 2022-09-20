@@ -70,6 +70,7 @@ class Tile(object):
                 time.sleep(0.02)
                 self.surface.blit(self.tileImage, (self.posX, self.posY))
                 pygame.display.update()
+            time.sleep(0.05)
 
         elif(direction == 1):
             for i in range(34):
@@ -78,6 +79,7 @@ class Tile(object):
                 time.sleep(0.02)
                 self.surface.blit(self.tileImage, (self.posX, self.posY))
                 pygame.display.update()
+            time.sleep(0.05)
 
         elif(direction == 2):
             for i in range(34):
@@ -86,6 +88,7 @@ class Tile(object):
                 time.sleep(0.02)
                 self.surface.blit(self.tileImage, (self.posX, self.posY))
                 pygame.display.update()
+            time.sleep(0.05)
 
         elif(direction == 3):
             for i in range(34):
@@ -94,6 +97,7 @@ class Tile(object):
                 time.sleep(0.02)
                 self.surface.blit(self.tileImage, (self.posX, self.posY))
                 pygame.display.update()
+            time.sleep(0.05)
 
         # self.rect.y += 5
 
@@ -126,7 +130,7 @@ def draw(surface, gridDistance, rows, tiles, GRID):
     GRID.drawTiles()
     GRID.drawGrid()
     # GRID.moveTiles()
-    pygame.display.update()
+
 
 def split(a, n):
     k, m = divmod(len(a), n)
@@ -153,15 +157,42 @@ def readFile():
     #         print(inList[i][j], end=" ")
     #     print()
 
+def getInvCount(array2d):
+    inv_count = 0
+    empty_value = 0
+    for i in range(0, 9):
+        for j in range(i + 1, 9):
+            if array2d[j] != empty_value and array2d[i] != empty_value and array2d[i] > array2d[j]:
+                inv_count += 1
+    return inv_count
+
+def isSolvable(puzzle) :
+
+    # Count inversions in given 8 puzzle
+    inv_count = getInvCount([j for sub in puzzle for j in sub])
+    # return true if inversion count is even.
+    return (inv_count % 2 == 0)
+
 def main():
+    arrayOfNumbers = readFile()
+    pygame.font.init()
+    tileNotArrangedFont = pygame.font.Font('freesansbold.ttf', 32)
+    myWinFont = pygame.font.Font('freesansbold.ttf', 32)
+    mySolvableFont =  pygame.font.Font('freesansbold.ttf', 26)
+    tileNotArrangedText = tileNotArrangedFont.render('Tiles are not arranged!', True, COLOR_BLACK, COLOR_GRAY)
+    winText = myWinFont.render('All the tiles are in place!', True, COLOR_BLACK, COLOR_GRAY)
+    solvableText = mySolvableFont.render('The puzzle is Solvable!: ' + str(isSolvable(arrayOfNumbers)), True, COLOR_BLACK, COLOR_GRAY)
+    winTextRect = winText.get_rect()
+    solvableTextRect = solvableText.get_rect()
+    tileNotArrangedTextRect = tileNotArrangedText.get_rect()
+
     clock = pygame.time.Clock()
     rows = 3
     size = WINDOW_SCREEN_WIDTH
     distanceBetweenGrids = WINDOW_SCREEN_WIDTH // rows
     tileSize = distanceBetweenGrids
     window = pygame.display.set_mode((WINDOW_SCREEN_WIDTH*2, WINDOW_SCREEN_HEIGHT))
-    arrayOfNumbers = list(split(random.sample(range(0, 9), 9), 3))
-    arrayOfNumbers = readFile()
+
     # print(arrayOfNumbers)
     correctPos = [[1,2,3],[4,5,6],[7,8,0]]
     tiles = []
@@ -172,12 +203,16 @@ def main():
                 tiles.append(None)
             else:
                 tiles.append(Tile(tileSize * j, tileSize * i, tileSize, arrayOfNumbers[i][j], window))
-    print(tiles)
 
     GRID = Grid(window, tiles, rows, size)
 
     while True:
         clock.tick(30)
+
+        window.blit(tileNotArrangedText, (580, 200))
+        window.blit(solvableText, (580, 100))
+
+        pygame.display.update()
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 exit()
@@ -190,9 +225,8 @@ def main():
                         if(str(tiles[i].tileClicked(cursorPosX, cursorPosY)).isdigit()):
                             number = tiles[i].tileClicked(cursorPosX, cursorPosY)
                             x, y = getTileIndex(number, arrayOfNumbers, rows)
-                            # print(arrayOfNumbers[x][y], arrayOfNumbers[x + 1][y]) # go down
-                            print("Before swap of positions")
-                            display2dArray(arrayOfNumbers, rows)
+                            # print("Before swap of positions")
+                            # display2dArray(arrayOfNumbers, rows)
                             try:
                                 if(arrayOfNumbers[x + 1][y] == 0):
                                     arrayOfNumbers[x + 1][y] = number
@@ -201,7 +235,7 @@ def main():
                             except(IndexError):
                                 pass
                             try:
-                                if(arrayOfNumbers[x - 1][y] == 0):
+                                if(arrayOfNumbers[x - 1][y] == 0 and x - 1 >= 0): #
                                     arrayOfNumbers[x - 1][y] = number
                                     arrayOfNumbers[x][y] = 0
                                     tiles[i].moveTile(0)
@@ -215,23 +249,21 @@ def main():
                             except(IndexError):
                                 pass
                             try:
-                                if(arrayOfNumbers[x][y - 1] == 0):
+                                if(arrayOfNumbers[x][y - 1] == 0 and y - 1 >= 0): #
                                     arrayOfNumbers[x][y - 1] = number
                                     arrayOfNumbers[x][y] = 0
                                     tiles[i].moveTile(1)
                             except(IndexError):
                                 pass
-                                # elif(arrayOfNumbers[x][y - 1] == 0):
-                                #     arrayOfNumbers[x][y - 1] = number
-                                #     arrayOfNumbers[x][y] = 0
-                                #     tiles[i].moveTile(0)
+                            # print("After swap of positions")
+                            # display2dArray(arrayOfNumbers, rows)
+                            if(correctPos == arrayOfNumbers):
+                                window.blit(winText, (580, 200))
+                                pygame.display.update()
+                                time.sleep(3)
+                                exit()
 
-                            print("After swap of positions")
-                            display2dArray(arrayOfNumbers, rows)
                             break
-
-
-
 
         draw(window, size, rows, tiles, GRID)
 
