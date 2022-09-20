@@ -39,7 +39,7 @@ class Grid(object):
             else:
                 self.tiles[i].drawTile()
 
-    def moveTiles(self):
+    def moveTiles(self): # optional
         for i in range(len(self.tiles)):
             if self.tiles[i] == None:
                 continue
@@ -123,14 +123,35 @@ def display2dArray(arrayList, rows):
 
 def draw(surface, gridDistance, rows, tiles, GRID):
     surface.fill(COLOR_GRAY)
-    GRID.drawGrid()
     GRID.drawTiles()
+    GRID.drawGrid()
     # GRID.moveTiles()
     pygame.display.update()
 
 def split(a, n):
     k, m = divmod(len(a), n)
     return (a[i*k+min(i, m):(i+1)*k+min(i+1, m)] for i in range(n))
+
+def readFile():
+    f = open("puzzle.in", "r")
+    Lines = f.readlines()
+    inList = []
+
+    for i in range(len(Lines)):
+        splitArray = Lines[i].split()
+        tempList = []
+        for j in range(len(splitArray)):
+            tempList.append(int(splitArray[j]))
+        inList.append(tempList)
+
+    return inList
+
+        # inList[i] = tempList
+    #
+    # for i in range(3):
+    #     for j in range(3):
+    #         print(inList[i][j], end=" ")
+    #     print()
 
 def main():
     clock = pygame.time.Clock()
@@ -139,9 +160,9 @@ def main():
     distanceBetweenGrids = WINDOW_SCREEN_WIDTH // rows
     tileSize = distanceBetweenGrids
     window = pygame.display.set_mode((WINDOW_SCREEN_WIDTH*2, WINDOW_SCREEN_HEIGHT))
-    # arrayOfNumbers = list(split(random.sample(range(0, 9), 9), 3))
-    arrayOfNumbers = [[1,2,3],[4,0,6],[7,5,8]]
-    print(arrayOfNumbers)
+    arrayOfNumbers = list(split(random.sample(range(0, 9), 9), 3))
+    arrayOfNumbers = readFile()
+    # print(arrayOfNumbers)
     correctPos = [[1,2,3],[4,5,6],[7,8,0]]
     tiles = []
 
@@ -170,8 +191,7 @@ def main():
                             number = tiles[i].tileClicked(cursorPosX, cursorPosY)
                             x, y = getTileIndex(number, arrayOfNumbers, rows)
                             # print(arrayOfNumbers[x][y], arrayOfNumbers[x + 1][y]) # go down
-                            print(x, y)
-                            print(arrayOfNumbers[x][y], arrayOfNumbers[x - 1][y]) # go down
+                            print("Before swap of positions")
                             display2dArray(arrayOfNumbers, rows)
                             try:
                                 if(arrayOfNumbers[x + 1][y] == 0):
@@ -182,7 +202,6 @@ def main():
                                 pass
                             try:
                                 if(arrayOfNumbers[x - 1][y] == 0):
-                                    print("Red")
                                     arrayOfNumbers[x - 1][y] = number
                                     arrayOfNumbers[x][y] = 0
                                     tiles[i].moveTile(0)
@@ -207,7 +226,7 @@ def main():
                                 #     arrayOfNumbers[x][y] = 0
                                 #     tiles[i].moveTile(0)
 
-
+                            print("After swap of positions")
                             display2dArray(arrayOfNumbers, rows)
                             break
 
