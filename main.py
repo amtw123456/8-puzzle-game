@@ -65,29 +65,32 @@ class Tile(object):
     def moveTile(self, direction):
         if(direction == 0):
             for i in range(34):
-                self.posY += 5
-                self.rect.y += 5
-                time.sleep(0.02)
-                self.surface.blit(self.tileImage, (self.posX, self.posY))
-                pygame.display.update()
-        if(direction == 1):
-            for i in range(34):
                 self.posY -= 5
                 self.rect.y -= 5
                 time.sleep(0.02)
                 self.surface.blit(self.tileImage, (self.posX, self.posY))
                 pygame.display.update()
-        if(direction == 2):
+
+        elif(direction == 1):
             for i in range(34):
-                self.posX += 5
-                self.rect.X += 5
+                self.posX -= 5
+                self.rect.x -= 5
                 time.sleep(0.02)
                 self.surface.blit(self.tileImage, (self.posX, self.posY))
                 pygame.display.update()
-        if(direction == 3):
+
+        elif(direction == 2):
             for i in range(34):
-                self.posX -= 5
-                self.rect.X -= 5
+                self.posY += 5
+                self.rect.y += 5
+                time.sleep(0.02)
+                self.surface.blit(self.tileImage, (self.posX, self.posY))
+                pygame.display.update()
+
+        elif(direction == 3):
+            for i in range(34):
+                self.posX += 5
+                self.rect.x += 5
                 time.sleep(0.02)
                 self.surface.blit(self.tileImage, (self.posX, self.posY))
                 pygame.display.update()
@@ -97,12 +100,26 @@ class Tile(object):
     def tileClicked(self, cursorPosX, cursorPosY):
         if(self.rect.collidepoint((cursorPosX, cursorPosY))):
             # print("Tile:", self.tileNumber)
-            self.moveTile(0)
+            # self.moveTile(0)
             return self.tileNumber
         # if ((self.sizeOfTile * counterX) < cursorPosX and (self.sizeOfTile * counterY) < cursorPosY) and (
         #     (self.sizeOfTile * counterX) < cursorPosX and ((self.sizeOfTile * counterY) + self.sizeOfTile) > cursorPosY) and (
         #     ((self.sizeOfTile * counterX)  + self.sizeOfTile) > cursorPosX and (self.sizeOfTile * counterY) < cursorPosY) and (
         #     ((self.sizeOfTile * counterX)  + self.sizeOfTile) > cursorPosX and ((self.sizeOfTile * counterY) + self.sizeOfTile) > cursorPosY):
+
+def getTileIndex(tileNumber, arrayList, rows):
+    for i in range(rows):
+        for j in range(rows):
+            if(arrayList[i][j] == tileNumber):
+                return i, j
+                break
+
+def display2dArray(arrayList, rows):
+    for i in range(rows):
+        for j in range(rows):
+            print(arrayList[i][j], end=" ")
+        print()
+    print()
 
 def draw(surface, gridDistance, rows, tiles, GRID):
     surface.fill(COLOR_GRAY)
@@ -123,7 +140,7 @@ def main():
     tileSize = distanceBetweenGrids
     window = pygame.display.set_mode((WINDOW_SCREEN_WIDTH*2, WINDOW_SCREEN_HEIGHT))
     # arrayOfNumbers = list(split(random.sample(range(0, 9), 9), 3))
-    arrayOfNumbers = [[1,2,3],[4,5,6],[7,0,8]]
+    arrayOfNumbers = [[1,2,3],[4,0,6],[7,5,8]]
     print(arrayOfNumbers)
     correctPos = [[1,2,3],[4,5,6],[7,8,0]]
     tiles = []
@@ -149,7 +166,52 @@ def main():
                     if tiles[i] == None:
                         continue
                     else:
-                        tiles[i].tileClicked(cursorPosX, cursorPosY)
+                        if(str(tiles[i].tileClicked(cursorPosX, cursorPosY)).isdigit()):
+                            number = tiles[i].tileClicked(cursorPosX, cursorPosY)
+                            x, y = getTileIndex(number, arrayOfNumbers, rows)
+                            # print(arrayOfNumbers[x][y], arrayOfNumbers[x + 1][y]) # go down
+                            print(x, y)
+                            print(arrayOfNumbers[x][y], arrayOfNumbers[x - 1][y]) # go down
+                            display2dArray(arrayOfNumbers, rows)
+                            try:
+                                if(arrayOfNumbers[x + 1][y] == 0):
+                                    arrayOfNumbers[x + 1][y] = number
+                                    arrayOfNumbers[x][y] = 0
+                                    tiles[i].moveTile(2)
+                            except(IndexError):
+                                pass
+                            try:
+                                if(arrayOfNumbers[x - 1][y] == 0):
+                                    print("Red")
+                                    arrayOfNumbers[x - 1][y] = number
+                                    arrayOfNumbers[x][y] = 0
+                                    tiles[i].moveTile(0)
+                            except(IndexError):
+                                pass
+                            try:
+                                if(arrayOfNumbers[x][y + 1] == 0):
+                                    arrayOfNumbers[x][y + 1] = number
+                                    arrayOfNumbers[x][y] = 0
+                                    tiles[i].moveTile(3)
+                            except(IndexError):
+                                pass
+                            try:
+                                if(arrayOfNumbers[x][y - 1] == 0):
+                                    arrayOfNumbers[x][y - 1] = number
+                                    arrayOfNumbers[x][y] = 0
+                                    tiles[i].moveTile(1)
+                            except(IndexError):
+                                pass
+                                # elif(arrayOfNumbers[x][y - 1] == 0):
+                                #     arrayOfNumbers[x][y - 1] = number
+                                #     arrayOfNumbers[x][y] = 0
+                                #     tiles[i].moveTile(0)
+
+
+                            display2dArray(arrayOfNumbers, rows)
+                            break
+
+
 
 
         draw(window, size, rows, tiles, GRID)
