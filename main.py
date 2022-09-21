@@ -13,6 +13,7 @@ COLOR_BLUE = (0, 0, 255)
 COLOR_AMBER = (255, 191, 0)
 COLOR_PASTELYELLOW = (253,253,150)
 
+pygame.font.init()
 pygame.display.set_caption("8-Puzzle Game")
 
 class Grid(object):
@@ -41,13 +42,6 @@ class Grid(object):
                 continue
             else:
                 self.tiles[i].drawTile()
-
-    def moveTiles(self): # optional
-        for i in range(len(self.tiles)):
-            if self.tiles[i] == None:
-                continue
-            else:
-                self.tiles[i].moveTile()
 
 class Tile(object):
     def __init__(self, posX, posY, sizeOfTile, tileNumber, surface):
@@ -154,32 +148,96 @@ def isSolvable(puzzle) :
     inv_count = getInvCount([j for sub in puzzle for j in sub])
     return (inv_count % 2 == 0)
 
+# class NODE:
+#     def __init__(self, nodeNumber, arrayList):
+#         self.nodeNumber = nodeNumber
+#         self.arrayList = arrayList
+#         self.parentNode = None
+#         self.rightNode = None
+#         self.leftNode = None
+#         self.downNode = None
+#         self.upNode = None
+#
+#     def setUpNode(self):
+#         pass
+#
+#     def setDownNode(self):
+#         pass
+#
+#     def setRightNode(self):
+#         pass
+#
+#     def setLeftNode(self):
+#         pass
+
+# def BFSearch(arrayList):
+#     goalState = [[1,2,3],[4,5,6],[7,8,0]]
+#     frontier = [NODE(0,arrayList)]
+#     while(len(frontier) != 0):
+#         if(frontier.pop().arrayList == goalState):
+#             print("yess")
+
+class ButtonClass:
+    def __init__(self, x, y, width, height, buttonColor, buttonColorHover, buttonText = ""):
+        self.x = x
+        self.y = y
+        self.width = width
+        self.height = height
+        self.clicked = False
+        self.buttonColor = buttonColor
+        self.buttonColorHover = buttonColorHover
+        self.rect = pygame.Rect(x, y, width, height)
+        textFont = pygame.font.Font("freesansbold.ttf",20)
+        self.textRender = textFont.render(buttonText, True, COLOR_BLACK, None)
+
+    def drawButton(self, surface):
+        pos = pygame.mouse.get_pos()
+
+        if self.rect.collidepoint(pos):
+            pygame.draw.rect(surface, self.buttonColorHover, self.rect)
+            surface.blit(self.textRender, (self.x+self.width/3, self.y+self.height/4))
+            return True
+
+        else:
+            pygame.draw.rect(surface, self.buttonColor, self.rect)
+            surface.blit(self.textRender, (self.x+self.width/3, self.y+self.height/4))
+
+        return False
+
+class TextClass:
+    def __init__(self, x = 0, y = 0, width = 50, height = 50, text = "", textSize = 16, textColor = COLOR_BLACK, textBackgroundColor = COLOR_GRAY):
+        self.textFont = pygame.font.Font('freesansbold.ttf', textSize)
+        self.textRender = self.textFont.render(text, True, textColor, textBackgroundColor)
+        self.textRect = self.textRender.get_rect()
+        self.textRect.x = x
+        self.textRect.y = x
+        self.textRect.width = width
+        self.textRect.height = height
+
+    def blitText(self, surface, x, y):
+         surface.blit(self.textRender , (x, y))
+
+    def blitTextRect(self, surface, x, y):
+        pass
+
+
 def main():
     arrayOfNumbers = readFile()
-    pygame.font.init()
-
-    tileNotArrangedFont = pygame.font.Font('freesansbold.ttf', 32)
-    myWinFont = pygame.font.Font('freesansbold.ttf', 32)
-    mySolvableFont =  pygame.font.Font('freesansbold.ttf', 26)
-    smallFont = pygame.font.Font('freesansbold.ttf',16)
-    tileNotArrangedText = tileNotArrangedFont.render('Tiles are not arranged!', True, COLOR_BLACK, COLOR_GRAY)
-    winText = myWinFont.render('All the tiles are in place!', True, COLOR_BLACK, COLOR_GRAY)
-    solvableText = mySolvableFont.render('The puzzle is Solvable!: ' + str(isSolvable(arrayOfNumbers)), True, COLOR_BLACK, COLOR_GRAY)
-    quitText = smallFont.render('QUIT' , True , COLOR_BLACK)
-    quitTextRect = quitText.get_rect()
-    quitTextRect.x = 680
-    quitTextRect.y = 300
-    quitTextRect.height = 40
-    quitTextRect.width = 140
-    winTextRect = winText.get_rect()
-    solvableTextRect = solvableText.get_rect()
-    tileNotArrangedTextRect = tileNotArrangedText.get_rect()
-
+    tileNotArrangedText = TextClass(100, 100, 100, 50, "Tiles are not arranged!", 32)
+    winText = TextClass(100, 100, 100, 50, 'All the tiles are in place!', 32)
+    solvableText = TextClass(100, 100, 100, 50, 'The puzzle is Solvable!: ' + str(isSolvable(arrayOfNumbers)), 26)
+    quitButton = ButtonClass(680, 300, 140, 40, COLOR_PASTELYELLOW, COLOR_AMBER, "QUIT")
+    # bfsButton = ButtonClass(545, 400, 130, 40, COLOR_PASTELYELLOW, COLOR_AMBER, "BFS")
+    # dfsButton = ButtonClass(685, 400, 130, 40, COLOR_PASTELYELLOW, COLOR_AMBER, "DFS")
+    # nextButton = ButtonClass(825, 400, 130, 40, COLOR_PASTELYELLOW, COLOR_AMBER, "NEXT")
     clock = pygame.time.Clock()
-    rows = 3
+
     size = WINDOW_SCREEN_WIDTH
+    rows = 3
+
     distanceBetweenGrids = WINDOW_SCREEN_WIDTH // rows
     tileSize = distanceBetweenGrids
+
     window = pygame.display.set_mode((WINDOW_SCREEN_WIDTH*2, WINDOW_SCREEN_HEIGHT))
 
     correctPos = [[1,2,3],[4,5,6],[7,8,0]]
@@ -197,20 +255,19 @@ def main():
     while True:
         clock.tick(30)
         for event in pygame.event.get():
-            window.blit(tileNotArrangedText, (580, 200))
-            window.blit(solvableText, (580, 100))
+            tileNotArrangedText.blitText(window, 580, 200)
+            solvableText.blitText(window, 580, 100)
             cursorPosX, cursorPosY = pygame.mouse.get_pos()
-            if(quitTextRect.collidepoint(cursorPosX, cursorPosY)):
-                pygame.draw.rect(window, COLOR_AMBER,[680,300,140,40])
-            else:
-                pygame.draw.rect(window, COLOR_PASTELYELLOW,[680,300,140,40])
-            window.blit(quitText , (730,313))
+            quitButton.drawButton(window)
+            # bfsButton.drawButton(window)
+            # dfsButton.drawButton(window)
+            # nextButton.drawButton(window)
             pygame.display.update()
 
             if event.type == pygame.QUIT:
                 exit()
-            if event.type == pygame.MOUSEBUTTONUP:
-                if(quitTextRect.collidepoint(cursorPosX, cursorPosY)):
+            if pygame.mouse.get_pressed()[0] == 1:
+                if(quitButton.drawButton(window)):
                     exit()
                 for i in range(len(tiles)):
                     if tiles[i] == None:
@@ -248,15 +305,11 @@ def main():
                             except(IndexError):
                                 pass
                             if(correctPos == arrayOfNumbers):
-                                window.blit(winText, (580, 200))
+                                winText.blitText(window, 580, 200)
                                 pygame.display.update()
                                 time.sleep(3)
                                 exit()
                             break
-
-        # if width/2 <= mouse[0] <= width/2+140 and height/2 <= mouse[1] <= height/2+40:
-        #     pygame.draw.rect(window,COLOR_WHITE,[width/2,height/2,140,40])
-        # else:
 
         draw(window, size, rows, tiles, GRID)
 main()
