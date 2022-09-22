@@ -1,3 +1,5 @@
+from copy import copy, deepcopy
+import collections
 import pygame
 import random
 import time
@@ -15,6 +17,46 @@ COLOR_PASTELYELLOW = (253,253,150)
 
 pygame.font.init()
 pygame.display.set_caption("8-Puzzle Game")
+
+class ButtonClass:
+    def __init__(self, x, y, width, height, buttonColor, buttonColorHover, buttonText = ""):
+        self.x = x
+        self.y = y
+        self.width = width
+        self.height = height
+        self.clicked = False
+        self.buttonColor = buttonColor
+        self.buttonColorHover = buttonColorHover
+        self.rect = pygame.Rect(x, y, width, height)
+        textFont = pygame.font.Font("freesansbold.ttf",20)
+        self.textRender = textFont.render(buttonText, True, COLOR_BLACK, None)
+
+    def drawButton(self, surface):
+        pos = pygame.mouse.get_pos()
+
+        if self.rect.collidepoint(pos):
+            pygame.draw.rect(surface, self.buttonColorHover, self.rect)
+            surface.blit(self.textRender, (self.x+self.width/3, self.y+self.height/4))
+            return True
+
+        else:
+            pygame.draw.rect(surface, self.buttonColor, self.rect)
+            surface.blit(self.textRender, (self.x+self.width/3, self.y+self.height/4))
+
+        return False
+
+class TextClass:
+    def __init__(self, x = 0, y = 0, width = 50, height = 50, text = "", textSize = 16, textColor = COLOR_BLACK, textBackgroundColor = COLOR_GRAY):
+        self.textFont = pygame.font.Font('freesansbold.ttf', textSize)
+        self.textRender = self.textFont.render(text, True, textColor, textBackgroundColor)
+        self.textRect = self.textRender.get_rect()
+        self.textRect.x = x
+        self.textRect.y = x
+        self.textRect.width = width
+        self.textRect.height = height
+
+    def blitText(self, surface, x, y):
+         surface.blit(self.textRender , (x, y))
 
 class Grid(object):
     def __init__(self, surface, tiles, rows, gridSize):
@@ -98,6 +140,43 @@ class Tile(object):
         if(self.rect.collidepoint((cursorPosX, cursorPosY))):
             return self.tileNumber
 
+class NODE:
+    def __init__(self, nodeNumber, nodeListState):
+        self.nodeListState = nodeListState
+        self.nodeNumber = nodeNumber
+        self.parentNode = None
+        self.rightNode = None
+        self.downNode = None
+        self.leftNode = None
+        self.upNode = None
+        self.action = None
+
+    def printNodeInfo(self):
+        print("===================================================")
+        print("Current node value:", self.value)
+        if self.parentNode == None:
+            print("Current parent node value:", self.parentNode)
+        else:
+            print("Current parent node value:", self.parentNode.value)
+        if self.rightNode == None:
+            print("Current right node value:", self.rightNode)
+        else:
+            print("Current right node value:", self.rightNode.value)
+        if self.downNode == None:
+            print("Current down node value:", self.downNode)
+        else:
+            print("Current down node value:", self.downNode.value)
+        if self.leftNode == None:
+            print("Current left node value:", self.leftNode)
+        else:
+            print("Current left node value:", self.leftNode.value)
+        if self.upNode == None:
+            print("Current up node value:", self.upNode)
+        else:
+            print("Current up node value:", self.upNode.value)
+        print("Current node array list state:", self.nodeListState)
+        print("===================================================")
+
 def getTileIndex(tileNumber, arrayList, rows):
     for i in range(rows):
         for j in range(rows):
@@ -111,6 +190,13 @@ def display2dArray(arrayList, rows):
             print(arrayList[i][j], end=" ")
         print()
     print()
+
+def getZeroIndex(arrayList, rows):
+    for i in range(rows):
+        for j in range(rows):
+            if(arrayList[i][j] == 0):
+                return i, j
+                break
 
 def draw(surface, gridDistance, rows, tiles, GRID):
     surface.fill(COLOR_GRAY)
@@ -148,89 +234,92 @@ def isSolvable(puzzle) :
     inv_count = getInvCount([j for sub in puzzle for j in sub])
     return (inv_count % 2 == 0)
 
-# class NODE:
-#     def __init__(self, nodeNumber, arrayList):
-#         self.nodeNumber = nodeNumber
-#         self.arrayList = arrayList
-#         self.parentNode = None
-#         self.rightNode = None
-#         self.leftNode = None
-#         self.downNode = None
-#         self.upNode = None
-#
-#     def setUpNode(self):
-#         pass
-#
-#     def setDownNode(self):
-#         pass
-#
-#     def setRightNode(self):
-#         pass
-#
-#     def setLeftNode(self):
-#         pass
+def BFSearch(arrayList):
+    explored = []
+    frontier = []
 
-# def BFSearch(arrayList):
-#     goalState = [[1,2,3],[4,5,6],[7,8,0]]
-#     frontier = [NODE(0,arrayList)]
-#     while(len(frontier) != 0):
-#         if(frontier.pop().arrayList == goalState):
-#             print("yess")
+    nodeNumber = 0
+    frontier = [NODE(nodeNumber, deepcopy(arrayList))]
+    frontier = collections.deque(frontier)
 
-class ButtonClass:
-    def __init__(self, x, y, width, height, buttonColor, buttonColorHover, buttonText = ""):
-        self.x = x
-        self.y = y
-        self.width = width
-        self.height = height
-        self.clicked = False
-        self.buttonColor = buttonColor
-        self.buttonColorHover = buttonColorHover
-        self.rect = pygame.Rect(x, y, width, height)
-        textFont = pygame.font.Font("freesansbold.ttf",20)
-        self.textRender = textFont.render(buttonText, True, COLOR_BLACK, None)
-
-    def drawButton(self, surface):
-        pos = pygame.mouse.get_pos()
-
-        if self.rect.collidepoint(pos):
-            pygame.draw.rect(surface, self.buttonColorHover, self.rect)
-            surface.blit(self.textRender, (self.x+self.width/3, self.y+self.height/4))
-            return True
-
+    while(len(frontier) != 0):
+        currentNode = frontier.popleft()
+        explored.append(deepcopy(currentNode.nodeListState))
+        x, y = getZeroIndex(currentNode.nodeListState, 3)
+        if(currentNode.nodeListState == [[1,2,3],[4,5,6],[7,8,0]]):
+            return currentNode
         else:
-            pygame.draw.rect(surface, self.buttonColor, self.rect)
-            surface.blit(self.textRender, (self.x+self.width/3, self.y+self.height/4))
+            if(x - 1 >= 0):
+                nodeNumber += 1
+                tempList = deepcopy(currentNode.nodeListState)
+                temp = tempList[x - 1][y]
+                tempList[x][y] = temp
+                tempList[x - 1][y] = 0
+                if tempList not in explored:
+                    currentNode.downNode = NODE(nodeNumber, tempList)
+                    currentNode.downNode.parentNode = currentNode
+                    currentNode.downNode.action = "D"
+                    frontier.append(currentNode.downNode)
 
-        return False
+            if(y - 1 >= 0):
+                nodeNumber += 1
+                tempList = deepcopy(currentNode.nodeListState)
+                temp = tempList[x][y - 1]
+                tempList[x][y] = temp
+                tempList[x][y - 1] = 0
+                if tempList not in explored:
+                    currentNode.rightNode = NODE(nodeNumber, tempList)
+                    currentNode.rightNode.parentNode = currentNode
+                    currentNode.rightNode.action = "R"
+                    frontier.append(currentNode.rightNode)
 
-class TextClass:
-    def __init__(self, x = 0, y = 0, width = 50, height = 50, text = "", textSize = 16, textColor = COLOR_BLACK, textBackgroundColor = COLOR_GRAY):
-        self.textFont = pygame.font.Font('freesansbold.ttf', textSize)
-        self.textRender = self.textFont.render(text, True, textColor, textBackgroundColor)
-        self.textRect = self.textRender.get_rect()
-        self.textRect.x = x
-        self.textRect.y = x
-        self.textRect.width = width
-        self.textRect.height = height
+            if(x + 1 <= 2):
+                nodeNumber += 1
+                tempList = deepcopy(currentNode.nodeListState)
+                temp = tempList[x + 1][y]
+                tempList[x][y] = temp
+                tempList[x + 1][y] = 0
+                if tempList not in explored:
+                    currentNode.upNode = NODE(nodeNumber, tempList)
+                    currentNode.upNode.parentNode = currentNode
+                    currentNode.upNode.action = "U"
+                    frontier.append(currentNode.upNode)
 
-    def blitText(self, surface, x, y):
-         surface.blit(self.textRender , (x, y))
+            if(y + 1 <= 2):
+                nodeNumber += 1
+                tempList = deepcopy(currentNode.nodeListState)
+                temp = tempList[x][y + 1]
+                tempList[x][y] = temp
+                tempList[x][y + 1] = 0
+                if tempList not in explored:
+                    currentNode.leftNode = NODE(nodeNumber, tempList)
+                    currentNode.leftNode.parentNode = currentNode
+                    currentNode.leftNode.action = "L"
+                    frontier.append(currentNode.leftNode)
 
-    def blitTextRect(self, surface, x, y):
-        pass
+def getSteps(node):
+    steps = []
 
+    while node.parentNode != None:
+        steps.insert(0, node.action)
+        node = node.parentNode
+
+    return steps
 
 def main():
+    clock = pygame.time.Clock()
+
     arrayOfNumbers = readFile()
+    # arrayOfNumbers = [[3, 0, 2], [6, 5, 1], [4, 7, 8]]
+    arrayList = [[2, 3, 0], [1, 5, 6], [4, 7, 8]] # test case 3
+
     tileNotArrangedText = TextClass(100, 100, 100, 50, "Tiles are not arranged!", 32)
     winText = TextClass(100, 100, 100, 50, 'All the tiles are in place!', 32)
     solvableText = TextClass(100, 100, 100, 50, 'The puzzle is Solvable!: ' + str(isSolvable(arrayOfNumbers)), 26)
     quitButton = ButtonClass(680, 300, 140, 40, COLOR_PASTELYELLOW, COLOR_AMBER, "QUIT")
-    # bfsButton = ButtonClass(545, 400, 130, 40, COLOR_PASTELYELLOW, COLOR_AMBER, "BFS")
-    # dfsButton = ButtonClass(685, 400, 130, 40, COLOR_PASTELYELLOW, COLOR_AMBER, "DFS")
-    # nextButton = ButtonClass(825, 400, 130, 40, COLOR_PASTELYELLOW, COLOR_AMBER, "NEXT")
-    clock = pygame.time.Clock()
+    bfsButton = ButtonClass(545, 400, 130, 40, COLOR_PASTELYELLOW, COLOR_AMBER, "BFS")
+    dfsButton = ButtonClass(685, 400, 130, 40, COLOR_PASTELYELLOW, COLOR_AMBER, "DFS")
+    nextButton = ButtonClass(825, 400, 130, 40, COLOR_PASTELYELLOW, COLOR_AMBER, "NEXT")
 
     size = WINDOW_SCREEN_WIDTH
     rows = 3
@@ -242,6 +331,8 @@ def main():
 
     correctPos = [[1,2,3],[4,5,6],[7,8,0]]
     tiles = []
+
+    stepsBool = False
 
     for i in range(rows):
         for j in range(rows):
@@ -259,9 +350,9 @@ def main():
             solvableText.blitText(window, 580, 100)
             cursorPosX, cursorPosY = pygame.mouse.get_pos()
             quitButton.drawButton(window)
-            # bfsButton.drawButton(window)
-            # dfsButton.drawButton(window)
-            # nextButton.drawButton(window)
+            bfsButton.drawButton(window)
+            dfsButton.drawButton(window)
+            nextButton.drawButton(window)
             pygame.display.update()
 
             if event.type == pygame.QUIT:
@@ -269,6 +360,19 @@ def main():
             if pygame.mouse.get_pressed()[0] == 1:
                 if(quitButton.drawButton(window)):
                     exit()
+                elif(dfsButton.drawButton(window)):
+                    print("DFS Pressed")
+
+                elif(bfsButton.drawButton(window)):
+                    currentNode = BFSearch(arrayOfNumbers)
+                    time.sleep(0.2)
+                    print(getSteps(currentNode))
+                    stepsBool = True
+
+                elif(nextButton.drawButton(window) and stepsBool):
+                    print("NEXT")
+                    time.sleep(0.2)
+
                 for i in range(len(tiles)):
                     if tiles[i] == None:
                         continue
