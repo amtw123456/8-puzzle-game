@@ -42,21 +42,34 @@ class ButtonClass:
         else:
             pygame.draw.rect(surface, self.buttonColor, self.rect)
             surface.blit(self.textRender, (self.x+self.width/3, self.y+self.height/4))
+            return False
 
-        return False
+    def setButtonColor(self, buttonColor):
+        self.buttonColor = buttonColor
+
 
 class TextClass:
     def __init__(self, x = 0, y = 0, width = 50, height = 50, text = "", textSize = 16, textColor = COLOR_BLACK, textBackgroundColor = COLOR_GRAY):
+        self.text = text
+        self.textSize = textSize
+        self.textColor = COLOR_BLACK
         self.textFont = pygame.font.Font('freesansbold.ttf', textSize)
-        self.textRender = self.textFont.render(text, True, textColor, textBackgroundColor)
+        self.textRender = self.textFont.render(self.text, True, textColor, textBackgroundColor)
         self.textRect = self.textRender.get_rect()
         self.textRect.x = x
         self.textRect.y = x
         self.textRect.width = width
         self.textRect.height = height
+        self.textBackgroundColor = textBackgroundColor
 
     def blitText(self, surface, x, y):
          surface.blit(self.textRender , (x, y))
+
+    def setText(self, text):
+        self.text = text
+        self.textFont = pygame.font.Font('freesansbold.ttf', self.textSize)
+        self.textRender = self.textFont.render("Steps: " + ' '.join(self.text), True, self.textColor, self.textBackgroundColor)
+
 
 class Grid(object):
     def __init__(self, surface, tiles, rows, gridSize):
@@ -221,6 +234,13 @@ def readFile():
 
     return inList
 
+def writeFile(list):
+    file = open('puzzle.out', 'w')
+    for steps in list:
+        # write each item on a new line
+        file.write("%s " % steps)
+    print('Done')
+
 def getInvCount(array2d):
     inv_count = 0
     empty_value = 0
@@ -297,31 +317,131 @@ def BFSearch(arrayList):
                     currentNode.leftNode.action = "L"
                     frontier.append(currentNode.leftNode)
 
-def getSteps(node):
-    steps = []
+def DFSearch(arrayList):
+    explored = []
+    frontier = []
+
+    nodeNumber = 0
+    frontier = [NODE(nodeNumber, deepcopy(arrayList))]
+    frontier = collections.deque(frontier)
+
+    while(len(frontier) != 0):
+        currentNode = frontier.pop()
+        explored.append(deepcopy(currentNode.nodeListState))
+        x, y = getZeroIndex(currentNode.nodeListState, 3)
+        if(currentNode.nodeListState == [[1,2,3],[4,5,6],[7,8,0]]):
+            return currentNode
+        else:
+            if(x - 1 >= 0):
+                nodeNumber += 1
+                tempList = deepcopy(currentNode.nodeListState)
+                temp = tempList[x - 1][y]
+                tempList[x][y] = temp
+                tempList[x - 1][y] = 0
+                if tempList not in explored:
+                    currentNode.downNode = NODE(nodeNumber, tempList)
+                    currentNode.downNode.parentNode = currentNode
+                    currentNode.downNode.action = "D"
+                    frontier.insert(0, currentNode.downNode)
+
+            if(y - 1 >= 0):
+                nodeNumber += 1
+                tempList = deepcopy(currentNode.nodeListState)
+                temp = tempList[x][y - 1]
+                tempList[x][y] = temp
+                tempList[x][y - 1] = 0
+                if tempList not in explored:
+                    currentNode.rightNode = NODE(nodeNumber, tempList)
+                    currentNode.rightNode.parentNode = currentNode
+                    currentNode.rightNode.action = "R"
+                    frontier.insert(0, currentNode.rightNode)
+
+            if(x + 1 <= 2):
+                nodeNumber += 1
+                tempList = deepcopy(currentNode.nodeListState)
+                temp = tempList[x + 1][y]
+                tempList[x][y] = temp
+                tempList[x + 1][y] = 0
+                if tempList not in explored:
+                    currentNode.upNode = NODE(nodeNumber, tempList)
+                    currentNode.upNode.parentNode = currentNode
+                    currentNode.upNode.action = "U"
+                    frontier.insert(0, currentNode.upNode)
+
+            if(y + 1 <= 2):
+                nodeNumber += 1
+                tempList = deepcopy(currentNode.nodeListState)
+                temp = tempList[x][y + 1]
+                tempList[x][y] = temp
+                tempList[x][y + 1] = 0
+                if tempList not in explored:
+                    currentNode.leftNode = NODE(nodeNumber, tempList)
+                    currentNode.leftNode.parentNode = currentNode
+                    currentNode.leftNode.action = "L"
+                    frontier.insert(0, currentNode.leftNode)
+
+def DFSearchMove(tileList, stepsPerState, listPerState, arrayOfNumbers, counter):
+    # print("Numbers of steps:", len(stepsPerState))
+    # print(arrayOfNumbers)
+    # print("Steps:", stepsPerState)
+    # print("Numbers of list states:", len(listPerState))
+
+    x, y = getZeroIndex(listPerState[counter], 3)
+    for j in tileList:
+        if j == None:
+            continue
+
+        if stepsPerState[counter] == 'U':
+            if listPerState[counter][x - 1][y] == j.tileNumber:
+                j.moveTile(0)
+
+        if stepsPerState[counter] == 'D':
+            if listPerState[counter][x + 1][y] == j.tileNumber:
+                j.moveTile(2)
+
+        if stepsPerState[counter] == 'L':
+            if listPerState[counter][x][y - 1] == j.tileNumber:
+                j.moveTile(1)
+
+        if stepsPerState[counter] == 'R':
+            if listPerState[counter][x][y + 1] == j.tileNumber:
+                j.moveTile(3)
+
+    return listPerState[counter]
+
+
+def getStepsAndList(node):
+    stepsPerState = []
+    listPerState = []
 
     while node.parentNode != None:
-        steps.insert(0, node.action)
+        stepsPerState.insert(0, node.action)
+        listPerState.insert(0, node.nodeListState)
         node = node.parentNode
 
-    return steps
+    return stepsPerState, listPerState
 
 def main():
     clock = pygame.time.Clock()
 
     arrayOfNumbers = readFile()
     # arrayOfNumbers = [[3, 0, 2], [6, 5, 1], [4, 7, 8]]
-    arrayList = [[2, 3, 0], [1, 5, 6], [4, 7, 8]] # test case 3
+    # arrayOfNumbers = [[8, 5, 4], [2, 7, 1], [3, 6, 0]]
+    # print(isSolvable(arrayOfNumbers)) # test case 3
 
     tileNotArrangedText = TextClass(100, 100, 100, 50, "Tiles are not arranged!", 32)
     winText = TextClass(100, 100, 100, 50, 'All the tiles are in place!', 32)
     solvableText = TextClass(100, 100, 100, 50, 'The puzzle is Solvable!: ' + str(isSolvable(arrayOfNumbers)), 26)
+    stepsText = TextClass(100, 100, 100, 50, '', 20)
     quitButton = ButtonClass(680, 300, 140, 40, COLOR_PASTELYELLOW, COLOR_AMBER, "QUIT")
+
     bfsButton = ButtonClass(545, 400, 130, 40, COLOR_PASTELYELLOW, COLOR_AMBER, "BFS")
     dfsButton = ButtonClass(685, 400, 130, 40, COLOR_PASTELYELLOW, COLOR_AMBER, "DFS")
     nextButton = ButtonClass(825, 400, 130, 40, COLOR_PASTELYELLOW, COLOR_AMBER, "NEXT")
 
+
     size = WINDOW_SCREEN_WIDTH
+    counter = 0
     rows = 3
 
     distanceBetweenGrids = WINDOW_SCREEN_WIDTH // rows
@@ -346,74 +466,86 @@ def main():
     while True:
         clock.tick(30)
         for event in pygame.event.get():
+
             tileNotArrangedText.blitText(window, 580, 200)
             solvableText.blitText(window, 580, 100)
-            cursorPosX, cursorPosY = pygame.mouse.get_pos()
+            stepsText.blitText(window, 520, 465)
+
             quitButton.drawButton(window)
             bfsButton.drawButton(window)
             dfsButton.drawButton(window)
             nextButton.drawButton(window)
             pygame.display.update()
-
+            cursorPosX, cursorPosY = pygame.mouse.get_pos()
             if event.type == pygame.QUIT:
                 exit()
-            if pygame.mouse.get_pressed()[0] == 1:
+            elif event.type == pygame.MOUSEBUTTONDOWN:
                 if(quitButton.drawButton(window)):
                     exit()
                 elif(dfsButton.drawButton(window)):
-                    print("DFS Pressed")
+                    dfsButton.buttonColor = (175, 175, 0)
+                    bfsButton.buttonColor = COLOR_PASTELYELLOW
+                    currentNode = DFSearch(arrayOfNumbers)
+                    steps, lists = getStepsAndList(currentNode)
+                    stepsText.setText(steps)
+                    stepsBool = True
 
                 elif(bfsButton.drawButton(window)):
+                    bfsButton.buttonColor = (175, 175, 0)
+                    dfsButton.buttonColor = COLOR_PASTELYELLOW
                     currentNode = BFSearch(arrayOfNumbers)
-                    time.sleep(0.2)
-                    print(getSteps(currentNode))
+                    steps, lists = getStepsAndList(currentNode)
+                    stepsText.setText(steps)
                     stepsBool = True
 
                 elif(nextButton.drawButton(window) and stepsBool):
+                    arrayOfNumbers = DFSearchMove(tiles, steps ,lists, arrayOfNumbers, counter)
+                    counter += 1
                     print("NEXT")
-                    time.sleep(0.2)
 
-                for i in range(len(tiles)):
-                    if tiles[i] == None:
-                        continue
-                    else:
-                        if(str(tiles[i].tileClicked(cursorPosX, cursorPosY)).isdigit()):
-                            number = tiles[i].tileClicked(cursorPosX, cursorPosY)
-                            x, y = getTileIndex(number, arrayOfNumbers, rows)
-                            try:
-                                if(arrayOfNumbers[x + 1][y] == 0):
-                                    arrayOfNumbers[x + 1][y] = number
-                                    arrayOfNumbers[x][y] = 0
-                                    tiles[i].moveTile(2)
-                            except(IndexError):
-                                pass
-                            try:
-                                if(arrayOfNumbers[x - 1][y] == 0 and x - 1 >= 0): #
-                                    arrayOfNumbers[x - 1][y] = number
-                                    arrayOfNumbers[x][y] = 0
-                                    tiles[i].moveTile(0)
-                            except(IndexError):
-                                pass
-                            try:
-                                if(arrayOfNumbers[x][y + 1] == 0):
-                                    arrayOfNumbers[x][y + 1] = number
-                                    arrayOfNumbers[x][y] = 0
-                                    tiles[i].moveTile(3)
-                            except(IndexError):
-                                pass
-                            try:
-                                if(arrayOfNumbers[x][y - 1] == 0 and y - 1 >= 0): #
-                                    arrayOfNumbers[x][y - 1] = number
-                                    arrayOfNumbers[x][y] = 0
-                                    tiles[i].moveTile(1)
-                            except(IndexError):
-                                pass
-                            if(correctPos == arrayOfNumbers):
-                                winText.blitText(window, 580, 200)
-                                pygame.display.update()
-                                time.sleep(3)
-                                exit()
-                            break
+                # for i in range(len(tiles)):
+                #     if tiles[i] == None:
+                #         continue
+                #     else:
+                #         if(str(tiles[i].tileClicked(cursorPosX, cursorPosY)).isdigit()):
+                #             number = tiles[i].tileClicked(cursorPosX, cursorPosY)
+                #             x, y = getTileIndex(number, arrayOfNumbers, rows)
+                #             try:
+                #                 if(arrayOfNumbers[x + 1][y] == 0):
+                #                     arrayOfNumbers[x + 1][y] = number
+                #                     arrayOfNumbers[x][y] = 0
+                #                     tiles[i].moveTile(2)
+                #             except(IndexError):
+                #                 pass
+                #             try:
+                #                 if(arrayOfNumbers[x - 1][y] == 0 and x - 1 >= 0): #
+                #                     arrayOfNumbers[x - 1][y] = number
+                #                     arrayOfNumbers[x][y] = 0
+                #                     tiles[i].moveTile(0)
+                #             except(IndexError):
+                #                 pass
+                #             try:
+                #                 if(arrayOfNumbers[x][y + 1] == 0):
+                #                     arrayOfNumbers[x][y + 1] = number
+                #                     arrayOfNumbers[x][y] = 0
+                #                     tiles[i].moveTile(3)
+                #             except(IndexError):
+                #                 pass
+                #             try:
+                #                 if(arrayOfNumbers[x][y - 1] == 0 and y - 1 >= 0): #
+                #                     arrayOfNumbers[x][y - 1] = number
+                #                     arrayOfNumbers[x][y] = 0
+                #                     tiles[i].moveTile(1)
+                #             except(IndexError):
+                #                 pass
+                #             break
+
+                if(correctPos == arrayOfNumbers):
+                    writeFile(steps)
+                    winText.blitText(window, 580, 200)
+                    pygame.display.update()
+                    time.sleep(3)
+                    main()
 
         draw(window, size, rows, tiles, GRID)
 main()
