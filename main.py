@@ -1,9 +1,13 @@
 from copy import copy, deepcopy
+from tkinter import *
+from tkinter import messagebox
 import collections
 import pygame
 import random
 import time
 import os
+
+Tk().wm_withdraw()
 
 WINDOW_SCREEN_WIDTH = 510
 WINDOW_SCREEN_HEIGHT = 510
@@ -501,7 +505,7 @@ def main():
                 elif(nextButton.drawButton(window) and stepsBool):
                     arrayOfNumbers = DFSearchMove(tiles, steps ,lists, arrayOfNumbers, counter)
                     counter += 1
-                    print("NEXT")
+
 
                 # for i in range(len(tiles)):
                 #     if tiles[i] == None:
@@ -541,6 +545,7 @@ def main():
                 #             break
 
                 if(correctPos == arrayOfNumbers):
+                    messagebox.showinfo("Cost",'Total path: ' + str(len(steps)))
                     writeFile(steps)
                     winText.blitText(window, 580, 200)
                     pygame.display.update()
